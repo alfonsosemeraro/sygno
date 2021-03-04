@@ -22,7 +22,7 @@ df = df.drop_duplicates(subset = ['source', 'target'])
 G = nx.from_pandas_edgelist(df, 'source', 'target', ['weight'])
     
 draw_signed_networkx(G)
-plt.show();
+plt.savefig('congress.png', dpi = 300, bbox_inches = 'tight');
 
 
 """
