@@ -15,3 +15,5 @@ nodes of their own group.
 The y coordinate is picked avoiding overlaps between nodes. Finally, the x axis is rotated proportionally to size of the two groups, thus rendering the distribution 
 of nodes in each partition.
 
+
+![Image of Yaktocat](https://octodex.github.com/images/yaktocat.png)
