@@ -17,4 +17,4 @@ of nodes in each partition.
 
 
 ![Congress](congress.png)
-A single votation snapshot of the United States Congress. Each node is a congressman, blue lines are positive edges (i.e. same vote) while red lines are negative edges (i.e. opposite vote). The network is structurally balanced, with little to no frustrated edges and two partitions of roughly the same size.
+A single snapshot of the United States Congress. Each node is a congressman, blue lines are positive edges (i.e. same vote) while red lines are negative edges (i.e. opposite vote). The network is structurally balanced, with little to no frustrated edges and two partitions of roughly the same size.
