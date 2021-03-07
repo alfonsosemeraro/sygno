@@ -29,7 +29,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
 import numpy as np
-from PIL import ImageColor
+from matplotlib.collections import PatchCollection
+
+#import line_profiler
 
 __author__ = """Alfonso Semeraro (alfonso.semeraro@gmail.com)"""
 __all__ = ['draw_signed_networkx',
@@ -196,7 +198,7 @@ def _get_positions(G) -> tuple:
 
 
 
-def _horiz_blue(ax, p1, p2, limits, alpha, linewidth, linestyle, color = 'steelblue') -> None:
+def _horiz_blue(ax, p1, p2, limits) -> None:
     
     """
     Draws horizontal positive links.
@@ -259,12 +261,12 @@ def _horiz_blue(ax, p1, p2, limits, alpha, linewidth, linestyle, color = 'steelb
     # Add the path to ax
     codes, verts = zip(*path_data)
     path = mpath.Path(verts, codes)
-    patch = mpatches.PathPatch(path, facecolor='none', edgecolor = color, alpha=alpha, 
-                               linewidth = linewidth, linestyle = linestyle)
-    ax.add_patch(patch)
+    patch = mpatches.PathPatch(path)
+    
+    return patch
     
 
-def _vert_link(ax, p1, p2, limits, alpha, linewidth, linestyle, color = 'steelblue', orient = 'left') -> None:
+def _vert_link(ax, p1, p2, limits, orient = 'left') -> None:
     
     """
     Draws vertical links, both negative (bound internally) and positive (bound externally).
@@ -312,7 +314,8 @@ def _vert_link(ax, p1, p2, limits, alpha, linewidth, linestyle, color = 'steelbl
     
     # computing midpoints
     K = (p1.y - p2.y) / 2
-    H = (limits[1]/limits[2]) / 5 # makes vertical humps more rounded
+#    H = (limits[1]/limits[2]) / 5 # makes vertical humps more rounded
+    H = limits[1] / 20
     H *= min([(p1.y - p2.y) / limits[2], 1]) * 3 # makes a wider arc for nodes far apart
     
     
@@ -336,13 +339,12 @@ def _vert_link(ax, p1, p2, limits, alpha, linewidth, linestyle, color = 'steelbl
     # add the Path to ax
     codes, verts = zip(*path_data)
     path = mpath.Path(verts, codes)
-    patch = mpatches.PathPatch(path, facecolor='none', edgecolor = color, alpha=alpha, 
-                               linewidth = linewidth, linestyle = linestyle)
-    ax.add_patch(patch)
+    patch = mpatches.PathPatch(path)
     
+    return patch
   
 
-def _diag_blue_desc(ax, p1, p2, alpha, linewidth, linestyle, color = 'steelblue') -> None:
+def _diag_blue_desc(ax, p1, p2) -> None:
     
     """
     Draws positive links where p1 is upper-left respect to p2.
@@ -393,12 +395,13 @@ def _diag_blue_desc(ax, p1, p2, alpha, linewidth, linestyle, color = 'steelblue'
     # add the Path to ax
     codes, verts = zip(*path_data)
     path = mpath.Path(verts, codes)
-    patch = mpatches.PathPatch(path, facecolor='none', edgecolor = color, alpha=alpha, 
-                               linewidth = linewidth, linestyle = linestyle)
-    ax.add_patch(patch)
+    patch = mpatches.PathPatch(path)
     
+    return patch
 
-def _diag_blue_asc(ax, p1, p2, alpha, linewidth, linestyle, color = 'steelblue') -> None:
+
+
+def _diag_blue_asc(ax, p1, p2) -> None:
     """
     Draws positive links where p1 is lower-left respect to p2.
 
@@ -447,12 +450,13 @@ def _diag_blue_asc(ax, p1, p2, alpha, linewidth, linestyle, color = 'steelblue')
     # Add path to ax
     codes, verts = zip(*path_data)
     path = mpath.Path(verts, codes)
-    patch = mpatches.PathPatch(path, facecolor='none', edgecolor = color, alpha=alpha, 
-                               linewidth = linewidth, linestyle = linestyle)
-    ax.add_patch(patch)
+    patch = mpatches.PathPatch(path)
+    
+    return patch
 
 
-def _red_link(ax, p1, p2, limits, alpha, linewidth, linestyle, color = '#ff3255') -> None:
+
+def _red_link(ax, p1, p2, limits) -> None:
 
     """
     Draws all kind of negative edges. Negative edges must be bundled below zero, regardelss of p1 and p2 position.
@@ -515,15 +519,16 @@ def _red_link(ax, p1, p2, limits, alpha, linewidth, linestyle, color = '#ff3255'
     # add the Path to ax
     codes, verts = zip(*path_data)
     path = mpath.Path(verts, codes)
-    patch = mpatches.PathPatch(path, facecolor='none', edgecolor = color, alpha=alpha, 
-                               linewidth = linewidth, linestyle = linestyle)
-    ax.add_patch(patch)
+    patch = mpatches.PathPatch(path)
+    
+    return patch
 
 
 def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1, 
                                 linewidth = .6, edge_linestyle = '-',
                                 positive_edges_color = 'steelblue', 
-                                negative_edges_color = '#ff3255'):
+                                negative_edges_color = '#ff3255',
+                                edges_color = None):
     
     """
     Draws the edges of G.
@@ -559,6 +564,9 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
         
     """
     
+    patches = []
+    colors = [] if not edges_color else edges_color
+    
     for source, target, w in list(G.edges(data = True)):
     
         weight = w['weight']
@@ -576,25 +584,25 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
             if weight == 1:
                 
                 if p1.x < 0:
-                    _vert_link(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                               color = positive_edges_color, orient = 'left', 
-                               linestyle = edge_linestyle, limits = limits)
+                    patch = _vert_link(ax, p1, p2, orient = 'left', limits = limits)
                 else:
-                    _vert_link(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                               color = positive_edges_color, orient = 'right', 
-                               linestyle = edge_linestyle, limits = limits)
+                    patch = _vert_link(ax, p1, p2, orient = 'right', limits = limits)
+                
+                if not edges_color:
+                    colors.append(positive_edges_color)    
+                patches.append(patch)
                     
 
             # E-i: same coordinates but not friends, red with horizontal internal bundling
             elif weight == -1:
                 if p1.x < 0:
-                    _vert_link(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                               color = negative_edges_color, orient = 'right', 
-                               linestyle = edge_linestyle, limits = limits)
+                    patch = _vert_link(ax, p1, p2, orient = 'right', limits = limits)
                 else:
-                    _vert_link(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                               color = negative_edges_color, orient = 'leeft', 
-                               linestyle = edge_linestyle, limits = limits)
+                    patch = _vert_link(ax, p1, p2, orient = 'leeft', limits = limits)
+                    
+                if not edges_color:
+                    colors.append(negative_edges_color)       
+                patches.append(patch)
 
 
         else:
@@ -603,16 +611,17 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
             if weight == 1:
                 
                 if p1.y == p2.y:
-                    _horiz_blue(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, color = positive_edges_color, 
-                               linestyle = edge_linestyle, limits = limits)
+                    patch = _horiz_blue(ax, p1, p2, limits = limits)
                 
                 elif p1.y < p2.y:
-                    _diag_blue_asc(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                                   color = positive_edges_color, linestyle = edge_linestyle)
+                    patch = _diag_blue_asc(ax, p1, p2)
             
                 else:
-                    _diag_blue_desc(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                                   color = positive_edges_color, linestyle = edge_linestyle)
+                    patch = _diag_blue_desc(ax, p1, p2)
+                    
+                if not edges_color:
+                    colors.append(positive_edges_color)       
+                patches.append(patch)
                 
                 
 
@@ -623,8 +632,16 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                 if p1.x > p2.x:
                     p1, p2 = p2, p1
                 
-                _red_link(ax, p1, p2, alpha = edge_alpha, linewidth = linewidth, 
-                          color = negative_edges_color, linestyle = edge_linestyle, limits = limits)
+                patch = _red_link(ax, p1, p2, limits = limits)
+                
+                if not edges_color:
+                    colors.append(negative_edges_color)       
+                patches.append(patch)
+         
+    
+    patches = PatchCollection(patches, facecolor = 'none', linewidth = linewidth, edgecolor = colors,  match_original=True, linestyle = edge_linestyle, alpha = edge_alpha)
+    ax.add_collection(patches)
+                
                 
                 
                 
@@ -664,17 +681,17 @@ def _draw_signed_networkx_nodes(G, ax, pos, node_size=40, node_color='black', no
      
         
     """
+    
 
     posx = [pos[node].x for node in G.nodes()]
     posy = [pos[node].y for node in G.nodes()]
     
     ax.scatter(posx, posy, facecolor = node_color, edgecolor = border_color, alpha = node_alpha,
                s = node_size, linewidth = border_width, marker = node_shape, zorder = 2)
-        
-        
 
 
-def _setup_axes1(fig, angle, left, right, bottom, up):
+
+def _setup_axes1(fig, angle, left, right, bottom, up, ax = None, rect = None):
     """
     Stacks a rotated axes over the main one.
 
@@ -724,22 +741,28 @@ def _setup_axes1(fig, angle, left, right, bottom, up):
         grid_locator1=MaxNLocator(nbins=4),
         grid_locator2=MaxNLocator(nbins=4))
 
-    
-    ax = floating_axes.FloatingSubplot(fig, 111, grid_helper=grid_helper)
-    fig.add_subplot(ax)
 
-    ax1 = ax.get_aux_axes(tr)
+    if not rect:
+        rect = 111
+    
+    ax1 = floating_axes.FloatingSubplot(fig, rect, grid_helper=grid_helper)
+    fig.add_subplot(ax1)
+
+    ax = ax1.get_aux_axes(tr)
     
     for axisLoc in ['top','left','right', 'bottom']:
-        ax.axis[axisLoc].set_visible(False)
         ax1.axis[axisLoc].set_visible(False)
+        ax.axis[axisLoc].set_visible(False)
         
        
     
-    return ax1, ax
+    return ax, ax1
 
 
 def draw_signed_networkx(G,
+                         ax = None,
+                         rect = None,
+                         fig = None,
                          node_size = 40,
                          node_alpha = .6,
                          edge_alpha = .6,
@@ -747,8 +770,9 @@ def draw_signed_networkx(G,
                          node_shape='o',
                          border_color = 'white', 
                          border_width = 1,
-                         positive_edges_color = 'steelblue',
-                         negative_edges_color = '#ff3255',
+                         positive_edges_color = None,
+                         negative_edges_color = None,
+                         edges_color = None,
                          edge_linestyle = '-',
                          edge_linewidth = 1,
                          show_rotation = True):
@@ -792,6 +816,10 @@ def draw_signed_networkx(G,
     *negative_edge_color*:
         Either a string or an iterable. If iterable, it must be sized after the number of edges in G. 
         If not iterable, default is '#ff3255'. The color of each (all) negative edge(s).
+        
+    *edge_colors*:
+        An iterable. Contains one color for each edge. If positive_edge_color or negative_edge_color is initialised,
+        this parameter is ignored.
     
     *edge_linestyle*:
         Either a string or an iterable. If iterable, it must be sized after the number of edges in G. 
@@ -821,16 +849,29 @@ def draw_signed_networkx(G,
     up, bottom = (- maxY / 1.8, maxY * 1.3)
     
     # Get rotated plot
-    fig = plt.figure(figsize = (10, 8))
-    ax, ax1 = _setup_axes1(fig, angle, left, right, up, bottom)
+    if not fig:
+        fig = plt.figure(figsize = (10, 8))
+    ax, ax1 = _setup_axes1(fig, angle, left, right, up, bottom, ax = ax, rect = rect)
+    
+    for figax in fig.axes:
+        figax.axis('off')
     
     
+    if positive_edges_color or negative_edges_color:
+        edges_color = None
+
+    if not positive_edges_color:
+        positive_edges_color = 'steelblue'
+        
+    if not negative_edges_color:
+        negative_edges_color = '#ff3255'
     
     # Draw edges and nodes
     limits = (minX, maxX, maxY)
     _draw_signed_networkx_edges(G, ax, pos, edge_alpha = edge_alpha, limits = limits, 
                                 positive_edges_color = positive_edges_color, 
                                 negative_edges_color = negative_edges_color,
+                                edges_color = edges_color,
                                 edge_linestyle = edge_linestyle, linewidth = edge_linewidth)
     
     _draw_signed_networkx_nodes(G, ax, pos, node_size = node_size, node_alpha = node_alpha, 
@@ -850,5 +891,4 @@ def draw_signed_networkx(G,
     ax.tick_params(labeltop=False, labelbottom=False, labelleft=False)
     
     return fig, ax
-    
     
