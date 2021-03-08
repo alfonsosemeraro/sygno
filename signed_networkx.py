@@ -890,5 +890,5 @@ def draw_signed_networkx(G,
         
     ax.tick_params(labeltop=False, labelbottom=False, labelleft=False)
     
-    return fig, ax
+    return fig, ax, pos
     
