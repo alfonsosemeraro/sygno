@@ -528,7 +528,8 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                                 linewidth = .6, edge_linestyle = '-',
                                 positive_edges_color = 'steelblue', 
                                 negative_edges_color = '#ff3255',
-                                edges_color = None):
+                                edges_color = None,
+                                show_edges = 'all'):
     
     """
     Draws the edges of G.
@@ -562,6 +563,10 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
     *edge_linestyle*:
         A string. Default is '-', but it can be customized according to matplotlib linestyles.
         
+    *show_edges*:
+        A string, one of "frustrated", "balanced", "frustrated_positive", "frustrated_negative", "balanced_positive", "balanced_negative",
+        or "all". Default is "all".
+        
     """
     
     patches = []
@@ -572,8 +577,24 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
         weight = w['weight']
     
         p1, p2 = [pos[source], pos[target]]
-
-
+        
+        
+        # Display only frustrated | balanced | both edges
+        
+        if (np.sign(p1.x) != np.sign(p2.x)) and weight == 1:
+            kind = 'frustrated_positive'
+        elif (np.sign(p1.x) == np.sign(p2.x)) and weight == -1:
+            kind = 'frustrated_negative'
+        elif weight == 1:
+            kind = 'balanced_positive'
+        else:
+            kind = 'balanced_negative'
+        
+    
+        if (show_edges != 'all') and (show_edges not in kind):
+            continue
+        
+        
         if p1.x == p2.x:
 
             # p1 must be the upper point, p2 must be the lower point
@@ -775,7 +796,8 @@ def draw_signed_networkx(G,
                          edges_color = None,
                          edge_linestyle = '-',
                          edge_linewidth = 1,
-                         show_rotation = True):
+                         show_rotation = True,
+                         show_edges = 'all'):
     
     """
     Draw a connected, undirected and signed network G.
@@ -832,6 +854,10 @@ def draw_signed_networkx(G,
     *show_rotation*:
         A boolean. If True, x-axis will be rotated towards the partition of nodes with more nodes into.
         A label will report the least eigenvalue, as a proxy for a frustration index of the Graph.
+        
+    *show_edges*:
+        A string, one of "frustrated", "balanced", "frustrated_positive", "frustrated_negative", "balanced_positive", "balanced_negative",
+        or "all". Default is "all".
             
     """
     
@@ -865,6 +891,13 @@ def draw_signed_networkx(G,
         
     if not negative_edges_color:
         negative_edges_color = '#ff3255'
+        
+        
+    if show_edges not in ['all', 'frustrated', 'balanced', 
+                          'frustrated_positive', 'frustrated_negative',
+                          'balanced_positive', 'balanced_negative']:
+        raise Exception("Value error: show_edges must be one of 'all' (default), 'balanced', 'frustrated', 'frustrated_positive',"+
+                        " 'frustrated_negative', 'balanced_positive', 'balanced_negative'.")
     
     # Draw edges and nodes
     limits = (minX, maxX, maxY)
@@ -872,7 +905,8 @@ def draw_signed_networkx(G,
                                 positive_edges_color = positive_edges_color, 
                                 negative_edges_color = negative_edges_color,
                                 edges_color = edges_color,
-                                edge_linestyle = edge_linestyle, linewidth = edge_linewidth)
+                                edge_linestyle = edge_linestyle, linewidth = edge_linewidth,
+                                show_edges = show_edges)
     
     _draw_signed_networkx_nodes(G, ax, pos, node_size = node_size, node_alpha = node_alpha, 
                                 node_color = node_color, node_shape = node_shape, 
