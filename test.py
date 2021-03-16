@@ -63,8 +63,8 @@ G = nx.from_pandas_edgelist(art, 'source', 'target', ['weight'])
 #largest_cc = max(nx.connected_components(G), key=len)
 #S = G.subgraph(largest_cc).copy() 
     
-draw_signed_networkx(G, show_edges = 'balanced_negative', theme = 'dark')
-plt.savefig('congress.png', dpi = 300, bbox_inches = 'tight');
+fig, *_ = draw_signed_networkx(G, show_edges = 'balanced_negative', theme = 'dark')
+plt.savefig('congress.png', dpi = 300, bbox_inches = 'tight', facecolor=fig.get_facecolor());
 
 
 """
