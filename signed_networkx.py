@@ -595,6 +595,7 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
             continue
         
         
+        
         if p1.x == p2.x:
 
             # p1 must be the upper point, p2 must be the lower point
@@ -612,6 +613,7 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                 if not edges_color:
                     colors.append(positive_edges_color)    
                 patches.append(patch)
+                
                     
 
             # E-i: same coordinates but not friends, red with horizontal internal bundling
@@ -624,7 +626,8 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                 if not edges_color:
                     colors.append(negative_edges_color)       
                 patches.append(patch)
-
+                
+                
 
         else:
 
@@ -645,6 +648,7 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                 patches.append(patch)
                 
                 
+                
 
             # E-e: different coordinates but not friends, red with vertical-lower bundling
             elif weight == -1:
@@ -658,9 +662,9 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                 if not edges_color:
                     colors.append(negative_edges_color)       
                 patches.append(patch)
-         
+                
     
-    patches = PatchCollection(patches, facecolor = 'none', linewidth = linewidth, edgecolor = colors,  match_original=True, linestyle = edge_linestyle, alpha = edge_alpha)
+    patches = PatchCollection(patches, facecolor = 'none', linewidth = linewidth, edgecolor = colors,  match_original=True, linestyle = edge_linestyle, alpha = edge_alpha, zorder = 1)
     ax.add_collection(patches)
                 
                 
@@ -708,7 +712,7 @@ def _draw_signed_networkx_nodes(G, ax, pos, node_size=40, node_color='black', no
     posy = [pos[node].y for node in G.nodes()]
     
     ax.scatter(posx, posy, facecolor = node_color, edgecolor = border_color, alpha = node_alpha,
-               s = node_size, linewidth = border_width, marker = node_shape, zorder = 2)
+               s = node_size, linewidth = border_width, marker = node_shape, zorder = 3)
 
 
 
@@ -797,7 +801,8 @@ def draw_signed_networkx(G,
                          edge_linestyle = '-',
                          edge_linewidth = 1,
                          show_rotation = True,
-                         show_edges = 'all'):
+                         show_edges = 'all',
+                         theme = 'default'):
     
     """
     Draw a connected, undirected and signed network G.
@@ -858,6 +863,22 @@ def draw_signed_networkx(G,
     *show_edges*:
         A string, one of "frustrated", "balanced", "frustrated_positive", "frustrated_negative", "balanced_positive", "balanced_negative",
         or "all". Default is "all".
+        
+    *theme*:
+        One of "default" or "dark".
+        
+    
+    Returns:
+    ------------
+    
+    *fig*:
+        The matplotlib Figure object.
+        
+    *ax*:
+        The matplotlib ax object.
+        
+    *pos*:
+        A dict, each item a Point(x, y), representing the coordinates of the nodes.
             
     """
     
@@ -914,12 +935,18 @@ def draw_signed_networkx(G,
         
     
     # Draw new axes
-    plt.axvline(x = 0, color = 'black')
-    ax.plot([left, right], [0, 0], color = 'black')
+    if theme == 'dark':
+        ccolor = '#AEAEAE'
+        fig.set_facecolor('#252525')
+    else:
+        ccolor = 'black'
+        
+    plt.axvline(x = 0, color = ccolor, zorder = 2)
+    ax.plot([left, right], [0, 0], color = ccolor)
         
     # Annotate mu
     if show_rotation:
-        plt.annotate(s = 'v = {}'.format(least_eigenvalue), xy = ( plt.axis()[1] * .05, plt.axis()[3] * .75), fontsize = 15)
+        plt.annotate(s = 'v = {}'.format(least_eigenvalue), xy = ( plt.axis()[1] * .05, plt.axis()[3] * .75), fontsize = 15, color = ccolor)
         
         
     ax.tick_params(labeltop=False, labelbottom=False, labelleft=False)
