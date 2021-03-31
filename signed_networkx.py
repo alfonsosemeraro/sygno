@@ -92,7 +92,7 @@ def _get_L_matrix(G) -> np.array:
 
 
 
-def _get_positions(G) -> tuple:
+def _get_positions(G, sort_by = None, jittering = 0) -> tuple:
     
     """
     Finds the smallest eigenvalue and the related eigenvector.
@@ -103,7 +103,13 @@ def _get_positions(G) -> tuple:
     Required arguments:
     ----------
     *G*:
-        A networkx connected, undirected signed Graph, with edges equals to either -1 or +1.    
+        A networkx connected, undirected signed Graph, with edges equals to either -1 or +1.  
+        
+    *sort_by*:
+        A string. An attribute of nodes in the Graph G.
+        
+    *jittering*:
+        A scalar. How much to jitter nodes' position. Default is 0, suggested is 0.002.
     
     Returns:
     ----------
@@ -126,6 +132,7 @@ def _get_positions(G) -> tuple:
         A float. The least eigenvalue will be printed as a label, as additional information.
         
     """
+    import pandas as pd
     
     Point = namedtuple('Point', ['x', 'y'])
 
@@ -136,63 +143,166 @@ def _get_positions(G) -> tuple:
     least_eigenvalue, least_eigenvector = eigsh(L, k=1, which='SM', return_eigenvectors=True)
     least_eigenvalue = round(least_eigenvalue[0], 4)
     
-    # Computing position of each node as follows:
-    pos = {}
-    pos_y = {}
+    df = pd.DataFrame({
+            'node': list(G.nodes()),
+            'x': [round(least_eigenvector[k][0], 5) for k in range(len(least_eigenvector))]
+            })
+    
+    if sort_by:
+        df['kind'] = nx.get_node_attributes(G, sort_by).values()
+    else:
+        df['kind'] = 0
+        
+    order = pd.DataFrame(df['node'])
+    
+    df = df.sort_values(['x', 'kind'])
+    df = df.reset_index()
+    df['y'] = 1
+    df['y'] = df.groupby('x')['y'].transform(pd.Series.cumsum)
+    df['y'] = df['y'] - 1
+    df = pd.merge(order, df, on = 'node')
+    
     
     # Limits of printable area
-    minX = None
-    maxX = None
-    maxY = 0
+    minX = df['x'].min()
+    maxX = df['x'].max()
+    maxY = df['y'].max()
     
     # Number of nodes in left and right side of the plot
-    left = right = 0
+    left = len(df.loc[df['x'] < 0])
+    right = len(df.loc[df['x'] > 0])
     
-    for i, node in enumerate(G.nodes()):
-        
-        # Get x coordinate
-        x = round(least_eigenvector[i][0], 5)
-        
-        # Y position is dependent on X:
-        # If there is no other point with the same X, then Y = 0
-        # Else Y++
-        if x not in pos_y.keys():
-            pos_y[x] = 0
-        else:
-            pos_y[x] = pos_y[x] + 1
-            
-        # Update position dict
-        p = Point(x, pos_y[x])
-        pos[node] = p
-        
-        # Update limits:
-        
-        # min X
-        if not minX or p.x < minX:
-            minX = p.x
-        
-        # max X
-        if not maxX or p.x > maxX:
-            maxX = p.x
-            
-        # max Y
-        if not maxY or p.y > maxY:
-            maxY = p.y
-            
-        # count either left or right side
-        if x < 0:
-            left += 1
-        elif x > 0:
-            right += 1
+    pos = {row.node: Point(row.x, row.y) for _, row in df.iterrows()}
           
-        # rotation is a function of how many nodes are in each side
-        # rotation is bound to [-15, +15] degrees
-        try:
-            rot = (left / (left + right)) * 30 - 15
-        except:
-            rot = 0
+    # rotation is a function of how many nodes are in each side
+    # rotation is bound to [-15, +15] degrees
+    try:
+        rot = (left / (left + right)) * 30 - 15
+    except:
+        rot = 0
+            
+            
+    from random import uniform
+    dx = (maxX - minX) * jittering
+    pos = {key: Point(uniform(val.x - dx, val.x + dx), val.y) for key, val in pos.items()}
+            
         
     return pos, minX, maxX, maxY, rot, least_eigenvalue
+
+
+
+
+#def _get_positions(G, jittering = False) -> tuple:
+#    
+#    """
+#    Finds the smallest eigenvalue and the related eigenvector.
+#    Computes each node's position after the computed eigenvector.
+#    
+#    Finds minimal and maximal position of nodes, and computes balancement between the two sides.
+#
+#    Required arguments:
+#    ----------
+#    *G*:
+#        A networkx connected, undirected signed Graph, with edges equals to either -1 or +1.  
+#        
+#    *jittering*:
+#        A boolean. If true, nodes will be jittered.
+#    
+#    Returns:
+#    ----------
+#    *pos*:
+#        A dictionary with all the nodes positions. An entry is formatted as { node_id: Point( x, y ) }
+#        
+#    *minX*:
+#        A float. Minimal x-coordinate of any point in the plot. It will be used in order to define the printable area.
+#    
+#    *maxX*:
+#        A float. Maximal x-coordinate of any point in the plot. It will be used in order to define the printable area.
+#    
+#    *maxY*:
+#        A float. Maximal y-coordinate of any point in the plot. It will be used in order to define the printable area.
+#        
+#    *rot*:
+#        A float. How many degrees the x-axis will be rotated given the number of nodes in each partition.
+#        
+#    *least_eigenvalue*:
+#        A float. The least eigenvalue will be printed as a label, as additional information.
+#        
+#    """
+#    
+#    Point = namedtuple('Point', ['x', 'y'])
+#
+#    # L = D - A
+#    L = _get_L_matrix(G)
+#    
+#    # least_eigenvector
+#    least_eigenvalue, least_eigenvector = eigsh(L, k=1, which='SM', return_eigenvectors=True)
+#    least_eigenvalue = round(least_eigenvalue[0], 4)
+#    
+#    # Computing position of each node as follows:
+#    pos = {}
+#    pos_y = {}
+#    
+#    # Limits of printable area
+#    minX = None
+#    maxX = None
+#    maxY = 0
+#    
+#    # Number of nodes in left and right side of the plot
+#    left = right = 0
+#    
+#    for i, node in enumerate(G.nodes()):
+#        
+#        # Get x coordinate
+#        x = round(least_eigenvector[i][0], 5)
+#        
+#        # Y position is dependent on X:
+#        # If there is no other point with the same X, then Y = 0
+#        # Else Y++
+#        if x not in pos_y.keys():
+#            pos_y[x] = 0
+#        else:
+#            pos_y[x] = pos_y[x] + 1
+#            
+#        # Update position dict
+#        p = Point(x, pos_y[x])
+#        pos[node] = p
+#        
+#        # Update limits:
+#        
+#        # min X
+#        if not minX or p.x < minX:
+#            minX = p.x
+#        
+#        # max X
+#        if not maxX or p.x > maxX:
+#            maxX = p.x
+#            
+#        # max Y
+#        if not maxY or p.y > maxY:
+#            maxY = p.y
+#            
+#        # count either left or right side
+#        if x < 0:
+#            left += 1
+#        elif x > 0:
+#            right += 1
+#          
+#        # rotation is a function of how many nodes are in each side
+#        # rotation is bound to [-15, +15] degrees
+#        try:
+#            rot = (left / (left + right)) * 30 - 15
+#        except:
+#            rot = 0
+#            
+#            
+#        if jittering:
+#            import random
+#            dx = (maxX - minX) / 500
+#            pos = {key: Point(random.uniform(val.x - dx, val.x + dx), val.y) for key, val in pos.items()}
+#            
+#        
+#    return pos, minX, maxX, maxY, rot, least_eigenvalue
 
 
 
@@ -663,9 +773,10 @@ def _draw_signed_networkx_edges(G, ax, pos, limits, edge_alpha = 1,
                     colors.append(negative_edges_color)       
                 patches.append(patch)
                 
-    
+                
     patches = PatchCollection(patches, facecolor = 'none', linewidth = linewidth, edgecolor = colors,  match_original=True, linestyle = edge_linestyle, alpha = edge_alpha, zorder = 1)
     ax.add_collection(patches)
+    
                 
                 
                 
@@ -802,6 +913,8 @@ def draw_signed_networkx(G,
                          edge_linewidth = 1,
                          show_rotation = True,
                          show_edges = 'all',
+                         sort_by = None,
+                         jittering = 0,
                          theme = 'default'):
     
     """
@@ -864,6 +977,12 @@ def draw_signed_networkx(G,
         A string, one of "frustrated", "balanced", "frustrated_positive", "frustrated_negative", "balanced_positive", "balanced_negative",
         or "all". Default is "all".
         
+    *sort_by*:
+        A string. An attribute of nodes in the Graph G.
+        
+    *jittering*:
+        A scalar. How much to jitter nodes' position. Default is 0, suggested is 0.002.
+        
     *theme*:
         One of "default" or "dark".
         
@@ -883,7 +1002,7 @@ def draw_signed_networkx(G,
     """
     
     # Get node positions
-    pos, minX, maxX, maxY, angle, least_eigenvalue = _get_positions(G)
+    pos, minX, maxX, maxY, angle, least_eigenvalue = _get_positions(G, sort_by, jittering)
     angle = angle if show_rotation else 0
     
     # Get plot extremes
