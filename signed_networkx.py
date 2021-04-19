@@ -92,7 +92,7 @@ def _get_L_matrix(G) -> np.array:
 
 
 
-def _get_positions(G, sort_by = None, jittering = 0) -> tuple:
+def _get_positions(G, sort_by = None, normalize = False, jittering = 0, margin = 0, scale = 'linear') -> tuple:
     
     """
     Finds the smallest eigenvalue and the related eigenvector.
@@ -108,8 +108,17 @@ def _get_positions(G, sort_by = None, jittering = 0) -> tuple:
     *sort_by*:
         A string. An attribute of nodes in the Graph G.
         
+    *normalize*:
+        A boolean. If True, x-positions will be normalized to [-1, 1].
+        
     *jittering*:
         A scalar. How much to jitter nodes' position. Default is 0, suggested is 0.002.
+        
+    *margin*:
+        A scalar. It creates an empty belt around y = 0, in order to separate positive and negative points.
+        
+    *scale*:
+        One of "linear" or "log". Change the scale of x-axis.
     
     Returns:
     ----------
@@ -163,6 +172,32 @@ def _get_positions(G, sort_by = None, jittering = 0) -> tuple:
     df = pd.merge(order, df, on = 'node')
     
     
+    # Normalization
+    if normalize:
+        x = df['x'].abs().max()
+        df['x'] = df['x'] / x
+        
+    # Margin
+    if margin:
+        df['x'] = df['x'].map(lambda x: x + margin if x >= 0 else x - margin)
+    
+    # Jittering
+    if jittering:
+        from random import uniform
+        dx = (df['x'].max() - df['x'].min()) * jittering
+        df['x'] = df['x'].map(lambda x: uniform(x - dx, x + dx))
+        
+    # Log scale
+    if scale == 'log':
+        mx = df['x'].abs().min()
+        
+        if mx == 0:
+            mx = df['x'].abs().nlargest(2).iloc[-1] # get second minimum value
+            df['x'] = df['x'].map(lambda x: x + mx if x >= 0 else x - mx) # translate each value of mx
+        
+        df['x'] = df['x'] * 1/mx
+        df['x'] = df['x'].map(lambda x: np.log(x) if x >= 0 else -np.log(-x))
+        
     # Limits of printable area
     minX = df['x'].min()
     maxX = df['x'].max()
@@ -180,11 +215,6 @@ def _get_positions(G, sort_by = None, jittering = 0) -> tuple:
         rot = (left / (left + right)) * 30 - 15
     except:
         rot = 0
-            
-            
-    from random import uniform
-    dx = (maxX - minX) * jittering
-    pos = {key: Point(uniform(val.x - dx, val.x + dx), val.y) for key, val in pos.items()}
             
         
     return pos, minX, maxX, maxY, rot, least_eigenvalue
@@ -914,7 +944,10 @@ def draw_signed_networkx(G,
                          show_rotation = True,
                          show_edges = 'all',
                          sort_by = None,
+                         normalize = False,
                          jittering = 0,
+                         margin = 0,
+                         scale = 'linear',
                          theme = 'default'):
     
     """
@@ -980,11 +1013,20 @@ def draw_signed_networkx(G,
     *sort_by*:
         A string. An attribute of nodes in the Graph G.
         
+     *normalize*:
+        A boolean. If True, x-positions will be normalized to [-1, 1].
+        
     *jittering*:
         A scalar. How much to jitter nodes' position. Default is 0, suggested is 0.002.
         
+    *margin*:
+        A scalar. It creates an empty belt around y = 0, in order to separate positive and negative points.
+        
     *theme*:
         One of "default" or "dark".
+        
+    *scale*:
+        One of "linear" or "log". Change the scale of x-axis.
         
     
     Returns:
@@ -1001,8 +1043,11 @@ def draw_signed_networkx(G,
             
     """
     
+    if scale not in ['linear', 'log']:
+        raise Exception("Value error: scale must be either 'linear' or 'log'.")
+    
     # Get node positions
-    pos, minX, maxX, maxY, angle, least_eigenvalue = _get_positions(G, sort_by, jittering)
+    pos, minX, maxX, maxY, angle, least_eigenvalue = _get_positions(G, sort_by, normalize, jittering, margin, scale)
     angle = angle if show_rotation else 0
     
     # Get plot extremes
@@ -1069,6 +1114,7 @@ def draw_signed_networkx(G,
         
         
     ax.tick_params(labeltop=False, labelbottom=False, labelleft=False)
+    
     
     return fig, ax, pos
     
