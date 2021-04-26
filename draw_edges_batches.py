@@ -77,7 +77,8 @@ def _draw_signed_networkx_edges(G,
     kinds = ['balanced_positive', 'balanced_negative', 'frustrated_positive', 'frustrated_negative']     
     edges = {key: [] for key in kinds}
     
-    
+    ## Divide each edge by its kind
+    ## Keep them in a dict { kind: list of edges }
     for source, target, w in list(G.edges(data = True)):
     
         if (source in outliers) or (target in outliers):
@@ -101,6 +102,8 @@ def _draw_signed_networkx_edges(G,
         edges[kind] += [(p1, p2, weight)]
         
         
+    ## Determine width, alpha and color of each kind of nodes 
+    ## according to show_edges / highlight_edges
     for kind in kinds:
         
         # Don't show this kind of arc
@@ -277,7 +280,9 @@ def _horiz_blue(ax, p1, p2, limits) -> None:
     
     # Computing midpoints
     H = (p2.x - p1.x) / 2
-    K = H + limits[2] / 10 # makes the horizontal humps more rounded.
+    
+    maxY = limits[2] if limits[2] > 0 else 4
+    K = H + maxY / 10 # makes the horizontal humps more rounded.
     
     # Define Bezier curve
     mid1 = Point(p1.x, p1.y + K)
