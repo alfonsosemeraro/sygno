@@ -205,6 +205,11 @@ def draw_edge_kind(ax,
             # E+e: different coordinates and friends, blue with vertical-upper bundling
             if weight == 1:
                 
+                # p1 must be the left point, p2 must be the right point
+                if p1.x < p2.x:
+                    p1, p2 = p2, p1
+                        
+                        
                 if p1.y == p2.y:
                     patch = _horiz_blue(ax, p1, p2, limits = limits)
                 
@@ -280,9 +285,7 @@ def _horiz_blue(ax, p1, p2, limits) -> None:
     
     # Computing midpoints
     H = (p2.x - p1.x) / 2
-    
-    maxY = limits[2] if limits[2] > 0 else 4
-    K = H + maxY / 10 # makes the horizontal humps more rounded.
+    K = H + limits[2] / 10 # makes the horizontal humps more rounded.
     
     # Define Bezier curve
     mid1 = Point(p1.x, p1.y + K)
