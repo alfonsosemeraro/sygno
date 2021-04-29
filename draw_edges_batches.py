@@ -112,7 +112,7 @@ def _draw_signed_networkx_edges(G,
         
         # This kind of arc is opaque
         if (highlight_edges != 'all') and (highlight_edges not in kind):
-            alpha = 0.03
+            alpha = 0.01
             lw = linewidth * .5
             color = 'lightgrey'
             zorder = 1
@@ -214,10 +214,10 @@ def draw_edge_kind(ax,
                     patch = _horiz_blue(ax, p1, p2, limits = limits)
                 
                 elif p1.y < p2.y:
-                    patch = _diag_blue_asc(ax, p1, p2)
+                    patch = _diag_blue_asc(ax, p1, p2, limits = limits)
             
                 else:
-                    patch = _diag_blue_desc(ax, p1, p2)
+                    patch = _diag_blue_desc(ax, p1, p2, limits = limits)
                     
             
 
@@ -258,18 +258,6 @@ def _horiz_blue(ax, p1, p2, limits) -> None:
         
     *limits*:
         A 3-item tuple, respectively minX, maxX, maxY.
-        
-    *aplha*:
-        A float. Alpha of the edge to be drawn.
-    
-    *linewidth*:
-        A float. Thickness of the edge to be drawn.
-        
-    *linestyle*:
-        A String. Default is '-' for continuous lines, see: Matplotlib linestyles.
-    
-    *color*:
-        A string. Default is 'steelblue', but it can be customized. 
         
     
     Notes:
@@ -328,18 +316,6 @@ def _vert_link(ax, p1, p2, limits, orient = 'left') -> None:
     *limits*:
         A 3-item tuple, respectively minX, maxX, maxY.
         
-    *aplha*:
-        A float. Alpha of the edge to be drawn.
-    
-    *linewidth*:
-        A float. Thickness of the edge to be drawn.
-    
-    *linestyle*:
-        A String. Default is '-' for continuous lines, see: Matplotlib linestyles.
-    
-    *color*:
-        A string. Default is 'steelblue', but it can be customized. 
-        
     *orient*:
         A string, can be either 'right' or 'left'. Red vertical edges should be bound internally, blue vertical edges externally.
         
@@ -357,7 +333,6 @@ def _vert_link(ax, p1, p2, limits, orient = 'left') -> None:
     
     # computing midpoints
     K = (p1.y - p2.y) / 2
-#    H = (limits[1]/limits[2]) / 5 # makes vertical humps more rounded
     H = limits[1] / 20
     H *= min([(p1.y - p2.y) / limits[2], 1]) * 3 # makes a wider arc for nodes far apart
     
@@ -387,7 +362,7 @@ def _vert_link(ax, p1, p2, limits, orient = 'left') -> None:
     return patch
   
 
-def _diag_blue_desc(ax, p1, p2) -> None:
+def _diag_blue_desc(ax, p1, p2, limits) -> None:
     
     """
     Draws positive links where p1 is upper-left respect to p2.
@@ -403,19 +378,9 @@ def _diag_blue_desc(ax, p1, p2) -> None:
     *p1*:
         A Point. First of the two vertices between which the edge will be drawn.
         
-    *aplha*:
-        A float. Alpha of the edge to be drawn.
-    
-    *linewidth*:
-        A float. Thickness of the edge to be drawn.
-    
-    *linestyle*:
-        A String. Default is '-' for continuous lines, see: Matplotlib linestyles.
+    *limits*:
+        A 3-item tuple, respectively minX, maxX, maxY.
         
-    *color*:
-        A string. Default is 'steelblue', but it can be customized. 
-        
-    
     Notes:
     ----------
     Points p1 and p2 are assumed to have:
@@ -425,7 +390,14 @@ def _diag_blue_desc(ax, p1, p2) -> None:
     """
     Point = namedtuple('Point', ['x', 'y'])
     
-    mid2 = Point(p2.x, p1.y)
+    H = limits[1] / 10
+    
+    if (p1.x - p2.x) >= ((2/3) * H):    
+    
+        mid2 = Point(p2.x, p1.y)
+        
+    else:
+        mid2 = Point(p1.x + H, np.mean([p1.y, p2.y]))
     
     # Define Bezier curve
     Path = mpath.Path
@@ -444,7 +416,7 @@ def _diag_blue_desc(ax, p1, p2) -> None:
 
 
 
-def _diag_blue_asc(ax, p1, p2) -> None:
+def _diag_blue_asc(ax, p1, p2, limits) -> None:
     """
     Draws positive links where p1 is lower-left respect to p2.
 
@@ -459,18 +431,8 @@ def _diag_blue_asc(ax, p1, p2) -> None:
     *p1*:
         A Point. First of the two vertices between which the edge will be drawn.
         
-    *aplha*:
-        A float. Alpha of the edge to be drawn.
-    
-    *linewidth*:
-        A float. Thickness of the edge to be drawn.
-    
-    *linestyle*:
-        A String. Default is '-' for continuous lines, see: Matplotlib linestyles.
-    
-    *color*:
-        A string. Default is 'steelblue', but it can be customized. 
-        
+    *limits*:
+        A 3-item tuple, respectively minX, maxX, maxY.        
     
     Notes:
     ----------
@@ -481,8 +443,15 @@ def _diag_blue_asc(ax, p1, p2) -> None:
     """    
     Point = namedtuple('Point', ['x', 'y'])
     
-    # Define Bezier curve
-    mid2 = Point(p1.x, p2.y)
+    H = limits[1]/10
+    
+    if (p2.x - p1.x) > ((H * 2) / 3) :         
+        # Define Bezier curve
+        mid2 = Point(p1.x, p2.y)
+    
+    else:        
+        mid2 = Point(p2.x - H, np.mean([p2.y, p1.y]))
+        
     Path = mpath.Path
     path_data = [
         (Path.MOVETO, p1),
