@@ -3,12 +3,11 @@ An algorithm for visualisation of directed and connected signed networkx Graphs.
 
 This repository is a Python realisation of the algorithm in
 
-```
-Galimberti E., Madeddu C., Bonchi F., Ruffo G. (2020) **Visualizing Structural Balance in Signed Networks**. 
-In: Cherifi H., Gaito S., Mendes J., Moro E., Rocha L. (eds) Complex Networks and Their Applications VIII. 
-COMPLEX NETWORKS 2019. Studies in Computational Intelligence, vol 882. Springer, Cham. 
-[https://doi.org/10.1007/978-3-030-36683-4_5](https://doi.org/10.1007/978-3-030-36683-4_5)
-```
+> Galimberti E., Madeddu C., Bonchi F., Ruffo G. (2020) **Visualizing Structural Balance in Signed Networks**. 
+> In: Cherifi H., Gaito S., Mendes J., Moro E., Rocha L. (eds) Complex Networks and Their Applications VIII. 
+> COMPLEX NETWORKS 2019. Studies in Computational Intelligence, vol 882. Springer, Cham. 
+> [https://doi.org/10.1007/978-3-030-36683-4_5](https://doi.org/10.1007/978-3-030-36683-4_5)
+
 
 This algorithm is based on the spectral properties of the adjacency matrix of a connected, directed and signed graph. It maps each node on a two-dimensional space, 
 divided in two groups by the y axis, where the x coordinate is a proxy for the degree of segregation of each node: nodes around x = 0 are in between of the two sides,
