@@ -7,7 +7,7 @@ Created on Fri Apr 23 17:15:25 2021
 """
 
 import pandas as pd
-from scipy.sparse.linalg import eigsh
+from scipy.sparse.linalg import eigs
 import networkx as nx
 
 
@@ -127,7 +127,7 @@ def _get_xcoord(G, compact):
     L = _get_L_matrix(G)
     
     # least_eigenvector
-    least_eigenvalue, least_eigenvector = eigsh(L, k=1, which='SM', return_eigenvectors=True)
+    least_eigenvalue, least_eigenvector = eigs(L, k=1, which='SM', return_eigenvectors=True)
     least_eigenvalue = round(least_eigenvalue[0], 4)
     
     df = pd.DataFrame({
