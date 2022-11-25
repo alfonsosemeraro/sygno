@@ -317,9 +317,9 @@ def _draw_ax(fig, ax, limits, angle, show_rotation, rect, theme, least_eigenvalu
     
     if maxY == 0:
         maxY = 2
-        
+
     left, right = (-m * 1.2, m * 1.2)
-    up, bottom = (- maxY / 1.8, maxY * 1.3)
+    up, bottom = ( maxY * 1.8, -maxY * 1.6)
     
     # Get rotated plot
     if not fig:
