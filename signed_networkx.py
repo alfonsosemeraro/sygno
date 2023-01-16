@@ -30,15 +30,16 @@ import numpy as np
 
 from nodes_position import nodes_coordinates
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 #import line_profiler
 
 __author__ = """Alfonso Semeraro (alfonso.semeraro@gmail.com)"""
 __all__ = ['draw_signed_networkx',
            '_setup_axes1',
            '_draw_signed_networkx_nodes',
-           '_draw_signed_networkx_edges',
-           '_get_positions',
-           '_get_L_matrix']
+           '_draw_signed_networkx_edges']
 
 
 
@@ -306,7 +307,7 @@ def _setup_axes1(fig, angle, left, right, bottom, up, ax = None, rect = None):
     return ax, ax1
 
 
-def _draw_ax(fig, ax, limits, angle, show_rotation, rect, theme, least_eigenvalue):
+def _draw_ax(ax, limits, angle, show_rotation, rect, theme, least_eigenvalue):
     
     # Printable area
     minX, maxX, maxY = limits
@@ -322,9 +323,8 @@ def _draw_ax(fig, ax, limits, angle, show_rotation, rect, theme, least_eigenvalu
     up, bottom = ( maxY * 1.8, -maxY * 1.6)
     
     # Get rotated plot
-    if not fig:
-        fig = plt.figure(figsize = (10, 8))
-    ax, ax1 = _setup_axes1(fig, angle, left, right, up, bottom, ax = ax, rect = rect)
+    if not ax:
+        fig, ax = plt.subplots(figsize = (10, 8))
     
     for figax in fig.axes:
         figax.axis('off')
@@ -341,7 +341,8 @@ def _draw_ax(fig, ax, limits, angle, show_rotation, rect, theme, least_eigenvalu
         
     # Annotate mu
     if show_rotation:
-        plt.annotate(s = 'v = {}'.format(least_eigenvalue), xy = ( plt.axis()[1] * .05, plt.axis()[3] * .75), fontsize = 15, color = ccolor)
+        y = max([1.5, maxY * .75])
+        plt.annotate('v = {}'.format(least_eigenvalue), xy = ( plt.axis()[1] * .05, y), fontsize = 15, color = ccolor)
         
         
     ax.tick_params(labeltop=False, labelbottom=False, labelleft=False)
@@ -353,7 +354,6 @@ def _draw_ax(fig, ax, limits, angle, show_rotation, rect, theme, least_eigenvalu
 def draw_signed_networkx(G,
                          ax = None,
                          rect = None,
-                         fig = None,
                          node_size = 40,
                          node_alpha = .6,
                          edge_alpha = .6,
@@ -365,7 +365,7 @@ def draw_signed_networkx(G,
                          edges_linestyle = '-',
                          edge_linewidth = 1,
                          compact = False,
-                         show_rotation = True,
+                         show_imbalance = True,
                          show_edges = None,
                          highlight_edges = None,
                          remove_n_outliers = 0,
@@ -481,9 +481,9 @@ def draw_signed_networkx(G,
     
     # Get node positions
     pos, limits, angle, least_eigenvalue, outliers = nodes_coordinates(G, compact, sort_by, remove_n_outliers, normalize, margin, jittering, scale)
-    
+        
     # Printable area
-    fig, ax = _draw_ax(fig, ax, limits, angle, show_rotation, rect, theme, least_eigenvalue)
+    fig, ax = _draw_ax(ax, limits, angle, show_imbalance, rect, theme, least_eigenvalue)
     
     
     
@@ -503,4 +503,41 @@ def draw_signed_networkx(G,
     
     
     return fig, ax, pos
+
+
+def get_nodes_position(G,
+                       remove_n_outliers = 0,
+                       normalize = False,
+                       scale = 'linear'):
+        """
+        Compute nodes position from a connected, undirected and signed network G.
+
+        Required arguments:
+        ----------
+        *G*:
+            The connected, undirected and signed networkx Graph to draw.
+
+        *remove_n_outliers*:
+            Remove n outliers nodes and arcs. Default is n = 0 (does not remove any node).
+
+         *normalize*:
+            A boolean. If True, x-positions will be normalized to [-1, 1].
+
+        *scale*:
+            One of "linear" or "log". Change the scale of x-axis.
+
+
+        Returns:
+        ------------
+
+        *pos*:
+            A dict, each item a Point(x, y), representing the coordinates of the nodes.
+
+        """
+        
+        pos, *_ = nodes_coordinates(G, 
+                                    n_outliers = remove_n_outliers, 
+                                    normalize = normalize, 
+                                    scale = scale)
+        return pos
     

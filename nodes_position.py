@@ -7,11 +7,19 @@ Created on Fri Apr 23 17:15:25 2021
 """
 
 import pandas as pd
-from scipy.sparse.linalg import eigs
+from scipy.sparse.linalg import eigs, eigsh
 import networkx as nx
+import numpy as np
 
 
-def nodes_coordinates(G, compact, sort_by, n_outliers, normalize, margin, jittering, scale):
+def nodes_coordinates(G, 
+                      compact = False, 
+                      sort_by = None, 
+                      n_outliers = 0, 
+                      normalize = False, 
+                      margin = 0, 
+                      jittering = 0, 
+                      scale = 'linear'):
     """ Main method of this class. It computes exact node positions according to the inputed parameters. """
          
     outliers = []
@@ -129,6 +137,10 @@ def _get_xcoord(G, compact):
     # least_eigenvector
     least_eigenvalue, least_eigenvector = eigs(L, k=1, which='SM', return_eigenvectors=True)
     least_eigenvalue = round(least_eigenvalue[0], 4)
+    
+    # real part only
+    least_eigenvector = np.real(least_eigenvector)
+    least_eigenvalue = np.real(least_eigenvalue)
     
     df = pd.DataFrame({
             'node': list(G.nodes()),
